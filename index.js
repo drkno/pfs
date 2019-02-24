@@ -23,8 +23,16 @@ const terminateProcess = async() => {
         process.exit(1);
     }
     terminateReceived = true;
-    await fs.unmount();
-    process.exit(0);
+    try {
+        await fs.unmount();
+        process.exit(0);
+    }
+    catch(e) {
+        if (process.env['DEBUG']) {
+            console.error(e.stack);
+        }
+        process.exit(1);
+    }
 };
 
 const handleCriticalError = err => {

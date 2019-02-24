@@ -2,7 +2,7 @@ const { basename, dirname, normalize, sep } = require('path');
 const BaseClient = require('./client');
 const ServersClient = require('./apis/servers');
 const SectionsClient = require('./apis/sections');
-const MetadataClient = require('./apis/metadata');
+const FileClient = require('./apis/file');
 
 class FileSystem {
     constructor(config) {
@@ -10,13 +10,13 @@ class FileSystem {
         this._client = new BaseClient(config);
         this._servers = new ServersClient(this._client);
         this._sections = new SectionsClient(this._client);
-        this._metadata = new MetadataClient(this._client);
+        this._file = new FileClient(this._client);
     }
 
     async listFiles(inputPath) {
         // todo: this code assumes that names of path components are unique, which they may not be
 
-        const normPath = normalize(inputPath);
+        const normPath = normalize(inputPath).replace(/\\/g, '');
         const spl = normPath.split(sep).filter(s => s.trim() !== '') || [];
         
         const servers = await this._servers.listServers();
@@ -42,11 +42,36 @@ class FileSystem {
         return sections;
     }
 
-    async openFile(inputPath) {
+    async getFile(inputPath) {
+        inputPath = inputPath.replace(/\\/g, '');
+        if (inputPath === '/') {
+            return {
+                name: 'Plex',
+                createdAt: new Date(),
+                lastModified: new Date(),
+                type: 'folder'
+            };
+        }
+
         const files = await this.listFiles(dirname(inputPath));
         const fileName = basename(inputPath);
+        return files.filter(f => f.name === fileName)[0];
+    }
 
-        const metadata = await this._metadata.getMetadata();
+    async openFile(inputPath, startIndex, numberOfBytes, outputBuffer) {
+        inputPath = inputPath.replace(/\\/g, '');
+        const file = await this.getFile(inputPath);
+        if (!file) {
+            throw new Error('No such file');
+        }
+
+        const fileBuffer = await this._file.getFileBuffer(file, startIndex, numberOfBytes);
+        if (fileBuffer === null) {
+            return 0;
+        }
+
+        fileBuffer.copy(outputBuffer);
+        return fileBuffer.length;
     }
 }
 

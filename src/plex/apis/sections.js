@@ -15,6 +15,7 @@ class SectionsClient {
             createdAt: new Date(d.createdAt * 1000),
             lastModified: new Date(d.updatedAt * 1000),
             sectionId: d.key,
+            type: 'folder',
             next: `/library/sections/${d.key}/all`
         }));
     }

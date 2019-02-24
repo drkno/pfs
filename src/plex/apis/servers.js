@@ -26,7 +26,8 @@ class ServersClient {
                 createdAt: new Date(d['$'].createdAt * 1000),
                 lastModified: new Date(d['$'].lastSeenAt * 1000),
                 token: d['$'].accessToken,
-                url: await this._findServer(d.Connection.map(u => u['$'].uri))
+                url: await this._findServer(d.Connection.map(u => u['$'].uri)),
+                type: 'folder'
             }))))
             .filter(d => !!d.url);
         

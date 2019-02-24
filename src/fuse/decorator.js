@@ -62,10 +62,15 @@ class FuseAsyncDecorator {
         const callback = args.splice(args.length - 1, 1)[0];
         try {
             const results = await this._delegate[funcName].apply(this._delegate, args);
-            callback.apply(this, results);
+            callback.apply(this, Array.isArray(results) ? results : [results]);
         } catch (e) {
-            console.error(e);
             callback(fuse.EIO);
+            if (process.env['DEBUG']) {
+                console.error(e.stack);
+            }
+            else {
+                console.error('An unhandled error occurred. Please re-mount the filesystem');
+            }
         }
     }
 

@@ -10,6 +10,7 @@ class BaseClient {
         this.jsonFetch = mem(this._jsonFetch.bind(this), cacheOptions);
         this.xmlFetch = mem(this._xmlFetch.bind(this), cacheOptions);
         this.headFetch = mem(this._headFetch.bind(this), cacheOptions);
+        this.bufferFetch = this._bufferFetch.bind(this);
     }
 
     _buildPlexUrl(server, path, params = {}) {
@@ -48,6 +49,15 @@ class BaseClient {
     async _headFetch(uri) {
         await fetch(uri, {method: 'HEAD'});
         return uri;
+    }
+
+    async _bufferFetch(server, path, params, startIndex, endIndex) {
+        return await (await fetch(this._buildPlexUrl(server, path, params), {
+            headers: {
+                'Accept': 'application/json',
+                'Range': `bytes=${startIndex}-${endIndex}`
+            }
+        })).buffer();
     }
 }
 
