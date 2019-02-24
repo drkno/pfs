@@ -77,9 +77,9 @@ class FuseAsyncDecorator {
     async mount() {
         try {
             const opts = {
-                options: [],
-                displayFolder: false,
-                force: false
+                options: this._config.fuseOptions || ['large_read'],
+                displayFolder: this._config.macDisplayMount === 'true',
+                force: this._config.forceMount === 'true'
             };
             if (!this._config.mountPath) {
                 throw new Error('mountPath must be specified');

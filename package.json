@@ -4,6 +4,7 @@
     "main": "index.js",
     "author": "Matthew Knox",
     "license": "MIT",
+    "repository": "https://github.com/mrkno/pfs",
     "dependencies": {
         "fuse-bindings": "^2.11.2",
         "mem": "^4.1.0",

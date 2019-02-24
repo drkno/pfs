@@ -1,4 +1,4 @@
-const ExtendedPromise = require('../../promise.js');
+const { ExtendedPromise, cleanAndDedupe } = require('../utils');
 
 class ServersClient {
     constructor(client) {
@@ -19,6 +19,14 @@ class ServersClient {
             includeRelay: 1
         });
 
+        if (!servers.MediaContainer.Device) {
+            if (servers.MediaContainer.size != '0' && process.env['DEBUG']) {
+                console.error(`User should have access to ${sectionItems.MediaContainer.size} servers, but none were returned.`);
+            }
+            console.error('You do not have access to any plex servers!');
+            return [];
+        }
+
         const filtered = (await ExtendedPromise.all(servers.MediaContainer.Device
             .filter(d => d['$'].presence == '1')
             .map(async(d) => ({
@@ -27,11 +35,12 @@ class ServersClient {
                 lastModified: new Date(d['$'].lastSeenAt * 1000),
                 token: d['$'].accessToken,
                 url: await this._findServer(d.Connection.map(u => u['$'].uri)),
-                type: 'folder'
+                type: 'folder',
+                id: Math.round(Math.random() * Number.MAX_SAFE_INTEGER)
             }))))
             .filter(d => !!d.url);
         
-        return filtered;
+        return cleanAndDedupe(filtered);
     }
 }
 

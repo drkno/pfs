@@ -1,4 +1,5 @@
-const { basename, dirname, normalize, sep } = require('path');
+const { basename, dirname, sep } = require('path');
+const mem = require('mem');
 const BaseClient = require('./client');
 const ServersClient = require('./apis/servers');
 const SectionsClient = require('./apis/sections');
@@ -11,13 +12,16 @@ class FileSystem {
         this._servers = new ServersClient(this._client);
         this._sections = new SectionsClient(this._client);
         this._file = new FileClient(this._client);
+
+        const cacheOptions = { maxAge: config.cacheAge || 3600000 };
+        this.listFiles = mem(this._listFiles.bind(this), cacheOptions);
+        this.getFile = mem(this._getFile.bind(this), cacheOptions);
     }
 
-    async listFiles(inputPath) {
+    async _listFiles(inputPath) {
         // todo: this code assumes that names of path components are unique, which they may not be
 
-        const normPath = normalize(inputPath).replace(/\\/g, '');
-        const spl = normPath.split(sep).filter(s => s.trim() !== '') || [];
+        const spl = inputPath.split(sep).filter(s => s.trim() !== '') || [];
         
         const servers = await this._servers.listServers();
         if (spl.length === 0) {
@@ -42,8 +46,7 @@ class FileSystem {
         return sections;
     }
 
-    async getFile(inputPath) {
-        inputPath = inputPath.replace(/\\/g, '');
+    async _getFile(inputPath) {
         if (inputPath === '/') {
             return {
                 name: 'Plex',
@@ -59,7 +62,6 @@ class FileSystem {
     }
 
     async openFile(inputPath, startIndex, numberOfBytes, outputBuffer) {
-        inputPath = inputPath.replace(/\\/g, '');
         const file = await this.getFile(inputPath);
         if (!file) {
             throw new Error('No such file');

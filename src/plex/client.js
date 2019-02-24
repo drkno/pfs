@@ -6,11 +6,6 @@ class BaseClient {
     constructor(config) {
         this.token = config.token;
         this.cid = config.cid;
-        const cacheOptions = { maxAge: config.cacheAge || 3600000 };
-        this.jsonFetch = mem(this._jsonFetch.bind(this), cacheOptions);
-        this.xmlFetch = mem(this._xmlFetch.bind(this), cacheOptions);
-        this.headFetch = mem(this._headFetch.bind(this), cacheOptions);
-        this.bufferFetch = this._bufferFetch.bind(this);
     }
 
     _buildPlexUrl(server, path, params = {}) {
@@ -24,7 +19,7 @@ class BaseClient {
             (Object.keys(params).map(k => `${k}=${params[k]}`).join('&'));
     }
 
-    async _jsonFetch(...args) {
+    async jsonFetch(...args) {
         return await (await fetch(this._buildPlexUrl(...args), {
             headers: {
                 'Accept': 'application/json'
@@ -38,7 +33,7 @@ class BaseClient {
         });
     }
 
-    async _xmlFetch(...args) {
+    async xmlFetch(...args) {
         return await this._toXml(await (await fetch(this._buildPlexUrl(...args), {
             headers: {
                 'Accept': 'application/xml'
@@ -46,12 +41,12 @@ class BaseClient {
         })).text());
     }
 
-    async _headFetch(uri) {
+    async headFetch(uri) {
         await fetch(uri, {method: 'HEAD'});
         return uri;
     }
 
-    async _bufferFetch(server, path, params, startIndex, endIndex) {
+    async bufferFetch(server, path, params, startIndex, endIndex) {
         return await (await fetch(this._buildPlexUrl(server, path, params), {
             headers: {
                 'Accept': 'application/json',

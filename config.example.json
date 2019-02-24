@@ -1,0 +1,12 @@
+{
+    "cid": "PlexFSv1",
+    "token": "mysecretplextoken",
+    "saveLoginDetails": true,
+    "mountPath": "/path/to/mount/location",
+    "uid": 1000,
+    "gid": 1000,
+    "cacheAge": 3600000,
+    "forceMount": false,
+    "macDisplayMount": false,
+    "fuseOptions": ["large_read"]
+}

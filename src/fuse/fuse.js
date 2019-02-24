@@ -23,7 +23,7 @@ class FuseFilesystem extends FileSystem {
         }
         let fd;
         do {
-            fd = (Math.random() * Number.MAX_SAFE_INTEGER) | 0;
+            fd = Math.round(Math.random() * Number.MAX_SAFE_INTEGER);
         }
         while(this._fdMap[fd]);
         this._fdMap[path] = fd;

@@ -1,4 +1,4 @@
-const { parse } = require('path');
+const { cleanAndDedupe } = require('../utils');
 
 class SectionsClient {
     constructor(client) {
@@ -9,15 +9,23 @@ class SectionsClient {
         const sections = await this._client.jsonFetch(server.url, '/library/sections', {
             'X-Plex-Token': server.token
         });
-        return sections.MediaContainer.Directory.map(d => ({
+
+        if (!sections.MediaContainer.Directory) {
+            if (process.env['DEBUG'] && sections.MediaContainer.size != '0') {
+                console.error(`User should have access to ${sections.MediaContainer.size} sections, but none were returned.`);
+            }
+            return [];
+        }
+
+        return cleanAndDedupe(sections.MediaContainer.Directory.map(d => ({
             server,
             name: d.title,
             createdAt: new Date(d.createdAt * 1000),
             lastModified: new Date(d.updatedAt * 1000),
-            sectionId: d.key,
+            id: d.key,
             type: 'folder',
             next: `/library/sections/${d.key}/all`
-        }));
+        })));
     }
 
     async listSectionItems(section) {
@@ -28,25 +36,23 @@ class SectionsClient {
         const sectionItems = await this._client.jsonFetch(section.server.url, section.next, {
             'X-Plex-Token': section.server.token
         });
-        return sectionItems.MediaContainer.Metadata.flatMap(d => {
-            if (d.Media) {
-                const fileNameCache = {};
-                return d.Media.flatMap(m => m.Part).map(p => {
-                    const parsed = parse(p.file);
-                    let addition = '';
-                    let i = 1;
-                    while (fileNameCache[parsed.name + addition + parsed.ext]) {
-                        addition = ` - ${i}`;
-                    }
-                    const filename = parsed.name + addition + parsed.ext;
-                    fileNameCache[filename] = true;
 
+        if (!sectionItems.MediaContainer.Metadata) {
+            if (process.env['DEBUG'] && sectionItems.MediaContainer.size != '0') {
+                console.error(`No items were returned from plex when there should have been ${sectionItems.MediaContainer.size} items.`);
+            }
+            return [];
+        }
+
+        return cleanAndDedupe(sectionItems.MediaContainer.Metadata.flatMap(d => {
+            if (d.Media) {
+                return d.Media.flatMap(m => m.Part).map(p => {
                     return {
                         server: section.server,
-                        name: filename,
+                        name: p.file,
                         createdAt: new Date(d.addedAt * 1000),
                         lastModified: new Date(d.updatedAt * 1000),
-                        partId: p.id,
+                        id: p.id,
                         next: p.key,
                         type: 'file',
                         size: p.size
@@ -59,12 +65,12 @@ class SectionsClient {
                     name: d.title,
                     createdAt: new Date(d.addedAt * 1000),
                     lastModified: new Date(d.updatedAt * 1000),
-                    sectionId: d.ratingKey,
+                    id: d.ratingKey,
                     next: d.key,
                     type: 'folder'
                 }];
             }
-        });
+        }));
     }
 }
 
