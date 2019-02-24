@@ -1,0 +1,1 @@
+Mounts all plex servers you have access to as local filesystems so that you can download/copy files.
