@@ -13,7 +13,9 @@ const PlexHeaders = {
 class PlexOAuth {
     async _signIn() {
         const {pin, code} = await this._getPlexOAuthPin();
-        opn(`https://app.plex.tv/auth/#!?clientID=${PlexHeaders['X-Plex-Client-Identifier']}&code=${code}`);
+        const url = `https://app.plex.tv/auth/#!?clientID=${PlexHeaders['X-Plex-Client-Identifier']}&code=${code}`;
+        opn(url);
+        console.log(`Please authenticate in your web browser. If your web browser did not open, please go to ${url}`);
         
         let token;
         while(true) {
