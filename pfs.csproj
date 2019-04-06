@@ -4,9 +4,11 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.2</TargetFramework>
     <LangVersion>7.1</LangVersion>
+    <RootNamespace>Pfs</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DokanNet" Version="1.1.2.1" />
     <PackageReference Include="Mono.Fuse.NETStandard" Version="1.0.0-pre2" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
   </ItemGroup>

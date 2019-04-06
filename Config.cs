@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -12,43 +11,43 @@ namespace Pfs
     {
         [DefaultValue("PlexFSv1")]
         [JsonProperty(PropertyName = "cid", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public string Cid { get; set; }
+        public string Cid { get; set; } = "PlexFSv1";
 
         [DefaultValue("")]
         [JsonProperty(PropertyName = "token", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public string Token { get; set; }
+        public string Token { get; set; } = "";
 
         [DefaultValue(true)]
         [JsonProperty(PropertyName = "saveLoginDetails", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public bool SaveLoginDetails { get; set; }
+        public bool SaveLoginDetails { get; set; } = true;
 
         [DefaultValue("")]
         [JsonProperty(PropertyName = "mountPath", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public string MountPath { get; set; }
+        public string MountPath { get; set; } = "";
 
         [DefaultValue(-1)]
         [JsonProperty(PropertyName = "uid", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public long Uid { get; set; }
+        public long Uid { get; set; } = -1;
 
         [DefaultValue(-1)]
         [JsonProperty(PropertyName = "gid", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public long Gid { get; set; }
-        
+        public long Gid { get; set; } = -1;
+
         [DefaultValue(3600000)]
         [JsonProperty(PropertyName = "cacheAge", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public long CacheAge { get; set; }
+        public long CacheAge { get; set; } = 3600000;
 
         [DefaultValue(false)]
         [JsonProperty(PropertyName = "forceMount", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public bool ForceMount { get; set; }
+        public bool ForceMount { get; set; } = false;
 
         [DefaultValue(false)]
         [JsonProperty(PropertyName = "macDisplayMount", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public bool MacDisplayMount { get; set; }
+        public bool MacDisplayMount { get; set; } = false;
 
-        [DefaultValue(new string[]{"large_read"})]
+        [DefaultValue(new[] {"large_read"})]
         [JsonProperty(PropertyName = "fuseOptions", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public string[] FuseOptions { get; set; }
+        public string[] FuseOptions { get; set; } = {"large_read"};
 
         [JsonIgnore]
         private string ConfigurationFile { get; set; }
@@ -58,7 +57,8 @@ namespace Pfs
             var result = new Dictionary<string, IList<string>>();
             var argv = Environment.GetCommandLineArgs();
             string key = null;
-            for (var i = 1; i < argv.Length; i++) {
+            for (var i = 1; i < argv.Length; i++)
+            {
                 if (argv[i].StartsWith('-'))
                 {
                     var newKey = argv[i].TrimStart('-');
@@ -81,30 +81,47 @@ namespace Pfs
             return result;
         }
 
-        private static bool GetBool(IList<string> input)
+        private static bool GetBool(string key, IList<string> input)
         {
-            switch(input.Count) {
+            switch(input.Count)
+            {
                 case 0:
                     return true;
                 case 1:
-                    return bool.Parse(input[0]);
+                    try
+                    {
+                        return bool.Parse(input[0]);
+                    }
+                    catch
+                    {
+                        throw new Exception($"Argument \"{key}\" expects at most one boolean argument but \"{input[0]}\" was given");
+                    }
                 default:
-                    throw new Exception("Invalid number of arguments passed to a boolean input");
+                    throw new Exception($"Argument \"{key}\" expects at most one boolean argument but {input.Count} were given");
             }
         }
 
-        private static long GetLong(IList<string> input)
+        private static long GetLong(string key, IList<string> input)
         {
-            if (input.Count != 1) {
-                throw new Exception("Invalid number of arguments passed to a numeric input");
+            if (input.Count != 1)
+            {
+                throw new Exception($"Argument \"{key}\" expects exactly one numeric argument but {input.Count} were given");
             }
-            return long.Parse(input[0]);
+            try
+            {
+                return long.Parse(input[0]);
+            }
+            catch
+            {
+                throw new Exception($"Argument \"{key}\" expects a numeric argument but \"{input[0]}\" was given");
+            }
         }
 
-        private static string GetString(IList<string> input)
+        private static string GetString(string key, IList<string> input)
         {
-            if (input.Count != 1) {
-                throw new Exception("Invalid number of arguments passed to a string input");
+            if (input.Count != 1)
+            {
+                throw new Exception($"Argument \"{key}\" expects exactly one argument but {input.Count} were given");
             }
             return input[0];
         }
@@ -112,13 +129,13 @@ namespace Pfs
         public static Configuration LoadConfig()
         {
             var cliArgs = ReadArgs();
-            var configFile = cliArgs.ContainsKey("configFile") ? GetString(cliArgs["configFile"]) : "config.json";
+            var configFile = cliArgs.ContainsKey("configFile") ? GetString("configFile", cliArgs["configFile"]) : "config.json";
             Configuration configuration;
             if (File.Exists(configFile))
             {
                 using (var file = File.OpenText(configFile))
                 {
-                    using (JsonTextReader reader = new JsonTextReader(file))
+                    using (var reader = new JsonTextReader(file))
                     {
                         configuration = JToken.ReadFrom(reader).ToObject<Configuration>();
                     }
@@ -132,33 +149,34 @@ namespace Pfs
 
             foreach (var key in cliArgs.Keys)
             {
-                switch(key) {
+                switch(key)
+                {
                     case "cid":
-                        configuration.Cid = GetString(cliArgs[key]);
+                        configuration.Cid = GetString(key, cliArgs[key]);
                         break;
                     case "token":
-                        configuration.Token = GetString(cliArgs[key]);
+                        configuration.Token = GetString(key, cliArgs[key]);
                         break;
                     case "saveLoginDetails":
-                        configuration.SaveLoginDetails = GetBool(cliArgs[key]);
+                        configuration.SaveLoginDetails = GetBool(key, cliArgs[key]);
                         break;
                     case "mountPath":
-                        configuration.MountPath = cliArgs[key][0];
+                        configuration.MountPath = GetString(key, cliArgs[key]);
                         break;
                     case "uid":
-                        configuration.Uid = GetLong(cliArgs[key]);
+                        configuration.Uid = GetLong(key, cliArgs[key]);
                         break;
                     case "gid":
-                        configuration.Gid = GetLong(cliArgs[key]);
+                        configuration.Gid = GetLong(key, cliArgs[key]);
                         break;
                     case "cacheAge":
-                        configuration.CacheAge = GetLong(cliArgs[key]);
+                        configuration.CacheAge = GetLong(key, cliArgs[key]);
                         break;
                     case "forceMount":
-                        configuration.ForceMount = GetBool(cliArgs[key]);
+                        configuration.ForceMount = GetBool(key, cliArgs[key]);
                         break;
                     case "macDisplayMount":
-                        configuration.MacDisplayMount = GetBool(cliArgs[key]);
+                        configuration.MacDisplayMount = GetBool(key, cliArgs[key]);
                         break;
                     case "fuseOptions":
                         configuration.FuseOptions = new string[cliArgs[key].Count];
@@ -171,12 +189,12 @@ namespace Pfs
 
             if (configuration.Uid < 0)
             {
-                configuration.Uid = long.Parse(Environment.GetEnvironmentVariable("UID"));
+                configuration.Uid = long.Parse(Environment.GetEnvironmentVariable("UID") ?? "0");
             }
 
             if (configuration.Gid < 0)
             {
-                configuration.Gid = long.Parse(Environment.GetEnvironmentVariable("GID"));
+                configuration.Gid = long.Parse(Environment.GetEnvironmentVariable("GID") ?? "0");
             }
 
             return configuration;
@@ -186,7 +204,7 @@ namespace Pfs
         {
             using (var file = File.CreateText(content.ConfigurationFile))
             {
-                var ser = new JsonSerializer() { Formatting = Formatting.Indented };
+                var ser = new JsonSerializer { Formatting = Formatting.Indented };
                 ser.Serialize(file, content);
             }
         }

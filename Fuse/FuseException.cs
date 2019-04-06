@@ -9,5 +9,10 @@ namespace Pfs.Fuse
         {
             ErrorCode = errorCode;
         }
+
+        public override string ToString()
+        {
+            return "Error = " + ErrorCode;
+        }
     }
 }

@@ -1,7 +1,4 @@
-using System;
-using System.Threading.Tasks;
-
-namespace Pfs.Plex
+namespace Pfs.Plex.Model
 {
     public enum FileType
     {

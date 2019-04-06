@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Pfs;
 
@@ -7,12 +9,17 @@ namespace pfs
 {
     public class Memoriser
     {
-        private TimeSpan _maxCacheAge;
-        private IDictionary<long, CacheItem> _resultCache;
+        private readonly TimeSpan _maxCacheAge;
+        private readonly IDictionary<long, CacheItem> _resultCache;
         public Memoriser(Configuration config)
         {
             _maxCacheAge = TimeSpan.FromMilliseconds(config.CacheAge);
             _resultCache = new Dictionary<long, CacheItem>();
+        }
+
+        private static long GenerateHashCode(params object[] input)
+        {
+            return input.Aggregate<object, long>(27, (current, i) => 13 * current + i.GetHashCode());
         }
 
         private T GetCachedResult<T>(long key)
@@ -29,9 +36,9 @@ namespace pfs
                 return default(T);
             }
 
-            if (cached.Value is Exception)
+            if (cached.Value is Exception exception)
             {
-                throw cached.Value as Exception;
+                ExceptionDispatchInfo.Capture(exception).Throw();
             }
 
             return (T) cached.Value;
@@ -39,9 +46,9 @@ namespace pfs
 
         public Q Memorise<T, Q>(Func<T, Q> callback, T arg)
         {
-            var hash = arg.GetHashCode();
+            var hash = GenerateHashCode(callback, arg);
             var cacheResult = GetCachedResult<Q>(hash);
-            if (object.Equals(cacheResult, default(Q)))
+            if (!object.Equals(cacheResult, default(Q)))
             {
                 return cacheResult;
             }
@@ -60,9 +67,9 @@ namespace pfs
 
         public async Task<Q> Memorise<T, Q>(Func<T, Task<Q>> callback, T arg)
         {
-            var hash = arg.GetHashCode();
+            var hash = GenerateHashCode(callback, arg);
             var cacheResult = GetCachedResult<Q>(hash);
-            if (object.Equals(cacheResult, default(Q)))
+            if (!object.Equals(cacheResult, default(Q)))
             {
                 return cacheResult;
             }
@@ -81,9 +88,9 @@ namespace pfs
 
         public Q Memorise<P, T, Q>(Func<P, T, Q> callback, P arg1, T arg2)
         {
-            var hash = arg1.GetHashCode() + 31 * arg2.GetHashCode();
+            var hash = GenerateHashCode(callback, arg1, arg2);
             var cacheResult = GetCachedResult<Q>(hash);
-            if (object.Equals(cacheResult, default(Q)))
+            if (!object.Equals(cacheResult, default(Q)))
             {
                 return cacheResult;
             }
@@ -102,9 +109,9 @@ namespace pfs
 
         public async Task<Q> Memorise<P, T, Q>(Func<P, T, Task<Q>> callback, P arg1, T arg2)
         {
-            var hash = arg1.GetHashCode() + 31 * arg2.GetHashCode();
+            var hash = GenerateHashCode(callback, arg1, arg2);
             var cacheResult = GetCachedResult<Q>(hash);
-            if (object.Equals(cacheResult, default(Q)))
+            if (!object.Equals(cacheResult, default(Q)))
             {
                 return cacheResult;
             }
@@ -123,9 +130,9 @@ namespace pfs
 
         public async Task<Q> Memorise<P, T, R, Q>(Func<P, T, R, Task<Q>> callback, P arg1, T arg2, R arg3)
         {
-            var hash = arg1.GetHashCode() + 31 * arg2.GetHashCode() + 37 * arg3.GetHashCode();
+            var hash = GenerateHashCode(callback, arg1, arg2, arg3);
             var cacheResult = GetCachedResult<Q>(hash);
-            if (object.Equals(cacheResult, default(Q)))
+            if (!object.Equals(cacheResult, default(Q)))
             {
                 return cacheResult;
             }
