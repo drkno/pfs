@@ -74,11 +74,11 @@ namespace Pfs.Plex.Api
                 {
                     return d.Media.SelectMany(m => m.Parts).Select(p => new FileSystemNode(
                         p.Id,
-                        Path.GetFileName(p.File),
-                        d.AddedAt, 
+                        Path.GetFileName(Utils.NormalisePath(p.File)),
+                        d.AddedAt,
                         d.UpdatedAt,
                         FileType.File,
-                        section.Server, 
+                        section.Server,
                         p.Key,
                         p.Size
                     ));

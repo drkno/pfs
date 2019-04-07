@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -11,6 +12,8 @@ namespace Pfs
 {
     public static class Utils
     {
+        private static readonly Regex _windowsPathRegex = new Regex(@"^[a-zA-Z]:(\\|\/|$)", RegexOptions.Compiled | RegexOptions.Singleline);
+
         public static void CleanAndDedupe(IEnumerable<Node> items)
         {
             var fileNameCache = new HashSet<string>();
@@ -100,7 +103,10 @@ namespace Pfs
 
         public static string NormalisePath(string path)
         {
-            return new Uri($"file://{path.Replace('?', '\n').Replace('#', '\r')}")
+            var inputPath = _windowsPathRegex.Replace(path, "\\")
+                            .Replace('?', '\n')
+                            .Replace('#', '\r');
+            return new Uri($"file://{inputPath}")
                 .LocalPath
                 .Replace("\\", "")
                 .Replace('\r', '#')
