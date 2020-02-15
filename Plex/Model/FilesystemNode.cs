@@ -8,7 +8,7 @@ namespace Pfs.Plex.Model
         public string Next { get; }
         public long Size { get; }
 
-        public FileSystemNode(long id, string name, DateTime createdAt, DateTime lastModified, FileType fileType, ServerNode server, string next, long size)
+        public FileSystemNode(long id, string name, DateTime createdAt, DateTime lastModified, FileType fileType, ServerNode server, string next, long size = 4096)
             : base(id, name, createdAt, lastModified, fileType)
         {
             Server = server;

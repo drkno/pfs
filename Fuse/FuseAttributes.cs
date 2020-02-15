@@ -23,7 +23,7 @@ namespace Pfs.Fuse
             atime = node.CreatedAt.ToUnixTimestamp();
             ctime = node.LastModified.ToUnixTimestamp();
             nlink = 1;
-            size = (node as FileSystemNode)?.Size ?? 0;
+            size = (node as FileSystemNode)?.Size ?? 4096;
             mode = node.Type == FileType.Folder ? DIRECTORY_MODE : FILE_MODE;
             uid = config.Uid;
             gid = config.Gid;

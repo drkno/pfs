@@ -40,8 +40,7 @@ namespace Pfs.Plex.Api
                 d.UpdatedAt,
                 FileType.Folder,
                 server,
-                $"/library/sections/{d.Key}/all",
-                0
+                $"/library/sections/{d.Key}/all"
             )).ToList();
             Utils.CleanAndDedupe(results);
             return results;
@@ -93,8 +92,7 @@ namespace Pfs.Plex.Api
                             d.UpdatedAt,
                             FileType.Folder,
                             section.Server,
-                            d.Key,
-                            0
+                            d.Key
                         )
                     };
                 }
