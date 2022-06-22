@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Mono.Fuse.NETStandard" Version="1.0.0-pre2" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
 </Project>
