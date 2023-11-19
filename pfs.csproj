@@ -2,14 +2,13 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp2.2</TargetFramework>
-    <LangVersion>7.1</LangVersion>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12</LangVersion>
     <RootNamespace>Pfs</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Mono.Fuse.NETStandard" Version="1.0.0-pre2" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Mono.Fuse.NETStandard" Version="1.1.0" />
   </ItemGroup>
 
 </Project>

@@ -2,55 +2,54 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Pfs
 {
     public class Configuration
     {
         [DefaultValue("PlexFSv1")]
-        [JsonProperty(PropertyName = "cid", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("cid")]
         public string Cid { get; set; } = "PlexFSv1";
 
         [DefaultValue("")]
-        [JsonProperty(PropertyName = "token", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("token")]
         public string Token { get; set; } = "";
 
         [DefaultValue(true)]
-        [JsonProperty(PropertyName = "saveLoginDetails", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("saveLoginDetails")]
         public bool SaveLoginDetails { get; set; } = true;
 
         [DefaultValue("")]
-        [JsonProperty(PropertyName = "mountPath", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("mountPath")]
         public string MountPath { get; set; } = "";
 
         [DefaultValue(-1)]
-        [JsonProperty(PropertyName = "uid", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("uid")]
         public long Uid { get; set; } = -1;
 
         [DefaultValue(-1)]
-        [JsonProperty(PropertyName = "gid", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("gid")]
         public long Gid { get; set; } = -1;
 
         [DefaultValue(3600000)]
-        [JsonProperty(PropertyName = "cacheAge", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("cacheAge")]
         public long CacheAge { get; set; } = 3600000;
 
         [DefaultValue(false)]
-        [JsonProperty(PropertyName = "forceMount", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("forceMount")]
         public bool ForceMount { get; set; } = false;
 
         [DefaultValue(false)]
-        [JsonProperty(PropertyName = "macDisplayMount", DefaultValueHandling = DefaultValueHandling.Populate)]
+        [JsonPropertyName("macDisplayMount")]
         public bool MacDisplayMount { get; set; } = false;
 
-        [DefaultValue(new[] {"large_read"})]
-        [JsonProperty(PropertyName = "fuseOptions", DefaultValueHandling = DefaultValueHandling.Populate)]
-        public string[] FuseOptions { get; set; } = {"large_read"};
+        [DefaultValue(new[] { "large_read" })]
+        [JsonPropertyName("fuseOptions")]
+        public string[] FuseOptions { get; set; } = { "large_read" };
 
-        [JsonIgnore]
-        private string ConfigurationFile { get; set; }
+        [JsonIgnore] private string ConfigurationFile { get; set; }
 
         private static IDictionary<string, IList<string>> ReadArgs()
         {
@@ -66,6 +65,7 @@ namespace Pfs
                     {
                         throw new Exception($"Duplicate argument '{newKey}' provided");
                     }
+
                     result[newKey] = new List<string>();
                     key = newKey;
                 }
@@ -78,12 +78,13 @@ namespace Pfs
                     result[key].Add(argv[i]);
                 }
             }
+
             return result;
         }
 
         private static bool GetBool(string key, IList<string> input)
         {
-            switch(input.Count)
+            switch (input.Count)
             {
                 case 0:
                     return true;
@@ -94,10 +95,12 @@ namespace Pfs
                     }
                     catch
                     {
-                        throw new Exception($"Argument \"{key}\" expects at most one boolean argument but \"{input[0]}\" was given");
+                        throw new Exception(
+                            $"Argument \"{key}\" expects at most one boolean argument but \"{input[0]}\" was given");
                     }
                 default:
-                    throw new Exception($"Argument \"{key}\" expects at most one boolean argument but {input.Count} were given");
+                    throw new Exception(
+                        $"Argument \"{key}\" expects at most one boolean argument but {input.Count} were given");
             }
         }
 
@@ -105,8 +108,10 @@ namespace Pfs
         {
             if (input.Count != 1)
             {
-                throw new Exception($"Argument \"{key}\" expects exactly one numeric argument but {input.Count} were given");
+                throw new Exception(
+                    $"Argument \"{key}\" expects exactly one numeric argument but {input.Count} were given");
             }
+
             try
             {
                 return long.Parse(input[0]);
@@ -123,33 +128,32 @@ namespace Pfs
             {
                 throw new Exception($"Argument \"{key}\" expects exactly one argument but {input.Count} were given");
             }
+
             return input[0];
         }
 
         public static Configuration LoadConfig()
         {
             var cliArgs = ReadArgs();
-            var configFile = cliArgs.ContainsKey("configFile") ? GetString("configFile", cliArgs["configFile"]) : "config.json";
+            var configFile = cliArgs.ContainsKey("configFile")
+                ? GetString("configFile", cliArgs["configFile"])
+                : "config.json";
             Configuration configuration;
             if (File.Exists(configFile))
             {
-                using (var file = File.OpenText(configFile))
-                {
-                    using (var reader = new JsonTextReader(file))
-                    {
-                        configuration = JToken.ReadFrom(reader).ToObject<Configuration>();
-                    }
-                }
+                using var file = File.OpenRead(configFile);
+                configuration = JsonSerializer.Deserialize<Configuration>(file);
             }
             else
             {
                 configuration = new Configuration();
             }
+
             configuration.ConfigurationFile = configFile;
 
             foreach (var key in cliArgs.Keys)
             {
-                switch(key)
+                switch (key)
                 {
                     case "cid":
                         configuration.Cid = GetString(key, cliArgs[key]);
@@ -202,11 +206,11 @@ namespace Pfs
 
         public static void SaveConfig(Configuration content)
         {
-            using (var file = File.CreateText(content.ConfigurationFile))
+            using var file = File.OpenWrite(content.ConfigurationFile);
+            JsonSerializer.Serialize(file, content, new JsonSerializerOptions()
             {
-                var ser = new JsonSerializer { Formatting = Formatting.Indented };
-                ser.Serialize(file, content);
-            }
+                WriteIndented = true
+            });
         }
     }
 }

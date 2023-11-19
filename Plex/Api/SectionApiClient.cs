@@ -1,9 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Pfs.Plex.Model;
 
 namespace Pfs.Plex.Api
@@ -26,9 +27,9 @@ namespace Pfs.Plex.Api
 
             if (sections?.MediaContainer?.DirectoryItems == null) 
             {
-                if (Environment.GetEnvironmentVariable("DEBUG") != null && sections?.MediaContainer?.Size != 0)
+                if (sections?.MediaContainer?.Size != 0)
                 {
-                    Console.WriteLine($"User should have access to {sections?.MediaContainer?.Size} sections, but none were returned.");
+                    Debug.WriteLine($"User should have access to {sections?.MediaContainer?.Size} sections, but none were returned.");
                 }
                 return new List<FileSystemNode>();
             }
@@ -60,9 +61,9 @@ namespace Pfs.Plex.Api
 
             if (sectionItems.MediaContainer?.MetadataItems == null)
             {
-                if (Environment.GetEnvironmentVariable("DEBUG") != null && sectionItems.MediaContainer?.Size != 0)
+                if (sectionItems.MediaContainer?.Size != 0)
                 {
-                    Console.WriteLine($"No items were returned from plex when there should have been {sectionItems.MediaContainer?.Size} items.");
+                    Debug.WriteLine($"No items were returned from plex when there should have been {sectionItems.MediaContainer?.Size} items.");
                 }
                 return new List<FileSystemNode>();
             }
@@ -72,7 +73,7 @@ namespace Pfs.Plex.Api
                 if (d.Media != null)
                 {
                     return d.Media.SelectMany(m => m.Parts).Select(p => new FileSystemNode(
-                        p.Id,
+                        p.Id.ToString(),
                         Path.GetFileName(Utils.NormalisePath(p.File)),
                         d.AddedAt,
                         d.UpdatedAt,
@@ -109,32 +110,32 @@ namespace Pfs.Plex.Api
 
         private class MediaContainer
         {
-            [JsonProperty("size")]
+            [JsonPropertyName("size")]
             public int Size { get; set; }
-            [JsonProperty("Metadata")]
+            [JsonPropertyName("Metadata")]
             public List<Metadata> MetadataItems { get; set; }
-            [JsonProperty("Directory")]
+            [JsonPropertyName("Directory")]
             public List<Metadata> DirectoryItems { get; set; }
         }
 
         private class Metadata
         {
-            [JsonProperty("ratingKey")]
-            public long RatingKey { get; set; }
-            [JsonProperty("key")]
+            [JsonPropertyName("ratingKey")]
+            public string RatingKey { get; set; }
+            [JsonPropertyName("key")]
             public string Key { get; set; }
-            [JsonProperty("title")]
+            [JsonPropertyName("title")]
             public string Title { get; set; }
-            [JsonProperty("addedAt")]
+            [JsonPropertyName("addedAt")]
             [JsonConverter(typeof(Utils.PlexDateTimeConverter))]
             public DateTime AddedAt { get; set; }
-            [JsonProperty("createdAt")]
+            [JsonPropertyName("createdAt")]
             [JsonConverter(typeof(Utils.PlexDateTimeConverter))]
             private DateTime CreatedAt
             {
                 set => AddedAt = value;
             }
-            [JsonProperty("updatedAt")]
+            [JsonPropertyName("updatedAt")]
             [JsonConverter(typeof(Utils.PlexDateTimeConverter))]
             public DateTime UpdatedAt { get; set; }
             public List<Medium> Media { get; set; }
@@ -142,19 +143,19 @@ namespace Pfs.Plex.Api
 
         private class Medium
         {
-            [JsonProperty("Part")]
+            [JsonPropertyName("Part")]
             public List<Part> Parts { get; set; }
         }
 
         private class Part
         {
-            [JsonProperty("id")]
+            [JsonPropertyName("id")]
             public int Id { get; set; }
-            [JsonProperty("key")]
+            [JsonPropertyName("key")]
             public string Key { get; set; }
-            [JsonProperty("file")]
+            [JsonPropertyName("file")]
             public string File { get; set; }
-            [JsonProperty("size")]
+            [JsonPropertyName("size")]
             public long Size { get; set; }
         }
     }

@@ -5,10 +5,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using pfs;
 
 namespace Pfs.Plex.Api
@@ -56,10 +55,8 @@ namespace Pfs.Plex.Api
         {
             var response = await _client.GetAsync(_BuildPlexUrl(server, path, urlParams));
             response.EnsureSuccessStatusCode();
-            using (var reader = new JsonTextReader(new StreamReader(await response.Content.ReadAsStreamAsync())))
-            {
-                return JToken.ReadFrom(reader).ToObject<T>();
-            }
+
+            return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync());
         }
 
         private T _ToXml<T>(Stream inputXmlStream)

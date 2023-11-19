@@ -2,17 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 using Pfs.Plex.Model;
 
 namespace Pfs
 {
     public static class Utils
     {
-        private static readonly Regex _windowsPathRegex = new Regex(@"^[a-zA-Z]:(\\|\/|$)", RegexOptions.Compiled | RegexOptions.Singleline);
+        private static readonly Regex _windowsPathRegex =
+            new Regex(@"^[a-zA-Z]:(\\|\/|$)", RegexOptions.Compiled | RegexOptions.Singleline);
 
         public static void CleanAndDedupe(IEnumerable<Node> items)
         {
@@ -29,6 +31,7 @@ namespace Pfs
                 {
                     addition = i++ == 0 ? $" - ({item.Id})" : $" - {i}";
                 }
+
                 var filename = name + addition + ext;
                 fileNameCache.Add(filename);
                 item.Name = filename;
@@ -42,7 +45,8 @@ namespace Pfs
             var remainingTasks = taskList.Count;
             foreach (var task in taskList)
             {
-                task.ContinueWith(t => {
+                task.ContinueWith(t =>
+                {
                     if (task.Status == TaskStatus.RanToCompletion)
                     {
                         tcs.TrySetResult(t.Result);
@@ -53,12 +57,14 @@ namespace Pfs
                     }
                 });
             }
+
             return await tcs.Task;
         }
 
         public static long ToUnixTimestamp(this DateTime dateTime)
         {
-            return (long) (TimeZoneInfo.ConvertTimeToUtc(dateTime) - new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc)).TotalSeconds;
+            return (long)(TimeZoneInfo.ConvertTimeToUtc(dateTime) -
+                          new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc)).TotalSeconds;
         }
 
         public static DateTime ToDateTime(this long val)
@@ -73,18 +79,15 @@ namespace Pfs
 
         public class PlexDateTimeConverter : JsonConverter<DateTime>
         {
-            public override void WriteJson(JsonWriter writer, DateTime value, JsonSerializer serializer)
+            public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                return reader.GetInt64().ToDateTime();
+            }
+
+            public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
             {
                 throw new NotImplementedException();
             }
-
-            public override DateTime ReadJson(JsonReader reader, Type objectType, DateTime existingValue, bool hasExistingValue, JsonSerializer serializer)
-            {
-                var inputVal = serializer.Deserialize<long>(reader);
-                return inputVal.ToDateTime();
-            }
-
-            public override bool CanRead => true;
         }
 
         public static (string directory, string filename) GetPathInfo(string path)
@@ -94,7 +97,8 @@ namespace Pfs
                 path = path.Substring(0, path.Length - 1);
             }
 
-            var i = Math.Max(path.LastIndexOf(Path.DirectorySeparatorChar), path.LastIndexOf(Path.AltDirectorySeparatorChar));
+            var i = Math.Max(path.LastIndexOf(Path.DirectorySeparatorChar),
+                path.LastIndexOf(Path.AltDirectorySeparatorChar));
             var folder = i <= 0 ? "/" : path.Substring(0, i);
             var file = i + 2 > path.Length ? "" : path.Substring(i + 1);
 
@@ -104,8 +108,8 @@ namespace Pfs
         public static string NormalisePath(string path)
         {
             var inputPath = _windowsPathRegex.Replace(path, "\\")
-                            .Replace('?', '\n')
-                            .Replace('#', '\r');
+                .Replace('?', '\n')
+                .Replace('#', '\r');
             return new Uri($"file://{inputPath}")
                 .LocalPath
                 .Replace("\\", "")

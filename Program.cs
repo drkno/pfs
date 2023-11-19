@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Pfs.Fuse;
 using Pfs.Plex;
@@ -12,16 +13,13 @@ namespace Pfs
 
         private static void HandleFatalException(Exception ex)
         {
-            if (Environment.GetEnvironmentVariable("DEBUG") != null)
-            {
-                Console.WriteLine(ex?.Message);
-                Console.WriteLine(ex?.StackTrace);
-                Console.ReadKey(true);
-            }
+            Debug.WriteLine(ex?.Message);
+            Debug.WriteLine(ex?.StackTrace);
             if (_terminateReceived)
             {
                 Environment.Exit(1);
             }
+
             _terminateReceived = true;
             try
             {
@@ -29,16 +27,14 @@ namespace Pfs
                 {
                     _fs?.UnMount();
                 }
+
                 Environment.Exit(1);
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                if (Environment.GetEnvironmentVariable("DEBUG") != null)
-                {
-                    Console.WriteLine(e.Message);
-                    Console.WriteLine(e.StackTrace);
-                    Console.ReadKey(true);
-                }
+                Debug.WriteLine(e.Message);
+                Debug.WriteLine(e.StackTrace);
+
                 Environment.Exit(1);
             }
         }
@@ -55,16 +51,26 @@ namespace Pfs
 
         private static void WindowsMain()
         {
-            string line;
-            while (!string.IsNullOrWhiteSpace(line = Console.ReadLine()))
+            Console.WriteLine("In interactive query mode. Write a file path and press return to query.");
+            Console.WriteLine("An empty line terminates input.");
+            Console.WriteLine("-----------");
+            while (true)
             {
+                Console.Write("> ");
+                var line = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    break;
+                }
+
                 Console.WriteLine(_fs.TestInput(line));
             }
         }
 
         public static async Task Main()
         {
-            AppDomain.CurrentDomain.UnhandledException += (sender, e) => HandleFatalException(e.ExceptionObject as Exception);
+            AppDomain.CurrentDomain.UnhandledException +=
+                (sender, e) => HandleFatalException(e.ExceptionObject as Exception);
 
             var config = Configuration.LoadConfig();
             if (string.IsNullOrWhiteSpace(config.Cid) || string.IsNullOrWhiteSpace(config.Token))

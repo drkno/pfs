@@ -1,5 +1,3 @@
-using System;
-using Pfs;
 using Pfs.Plex.Model;
 
 namespace Pfs.Fuse

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using Mono.Fuse.NETStandard;
 using Mono.Unix.Native;
-using Newtonsoft.Json;
 using pfs;
 
 namespace Pfs.Fuse
@@ -25,7 +27,7 @@ namespace Pfs.Fuse
         {
             try
             {
-                return (Errno) _memoriser.Memorise(_delegate.release, file, info.Handle.ToInt64());
+                return (Errno)_memoriser.Memorise(_delegate.release, file, info.Handle.ToInt64());
             }
             catch (Exception e)
             {
@@ -37,31 +39,31 @@ namespace Pfs.Fuse
         {
             try
             {
-                return (Errno) _memoriser.Memorise(_delegate.releasedir, directory, info.Handle.ToInt64());
+                return (Errno)_memoriser.Memorise(_delegate.releasedir, directory, info.Handle.ToInt64());
             }
             catch (Exception e)
             {
                 return HandleException(e);
             }
         }
-        
+
         protected override Errno OnOpenHandle(string file, OpenedPathInfo info)
         {
             try
             {
-                return (Errno) _memoriser.Memorise(_delegate.open, file, (long) info.OpenFlags).Result;
+                return (Errno)_memoriser.Memorise(_delegate.open, file, (long)info.OpenFlags).Result;
             }
             catch (Exception e)
             {
                 return HandleException(e);
             }
         }
-        
+
         protected override Errno OnOpenDirectory(string directory, OpenedPathInfo info)
         {
             try
             {
-                return (Errno) _memoriser.Memorise(_delegate.opendir, directory, (long) info.OpenFlags).Result;
+                return (Errno)_memoriser.Memorise(_delegate.opendir, directory, (long)info.OpenFlags).Result;
             }
             catch (Exception e)
             {
@@ -84,13 +86,13 @@ namespace Pfs.Fuse
                     st_atime = result.atime,
                     st_ctime = result.ctime,
                     st_mtime = result.mtime,
-                    st_nlink = (ulong) result.nlink,
-                    st_mode = (FilePermissions) result.mode,
+                    st_nlink = (ulong)result.nlink,
+                    st_mode = (FilePermissions)result.mode,
                     st_size = result.size,
-                    st_gid = (uint) result.gid,
-                    st_uid = (uint) result.uid
+                    st_gid = (uint)result.gid,
+                    st_uid = (uint)result.uid
                 };
-                return (Errno) FuseStatusCode.Success;
+                return (Errno)FuseStatusCode.Success;
             }
             catch (Exception e)
             {
@@ -99,16 +101,14 @@ namespace Pfs.Fuse
             }
         }
 
-        protected override Errno OnReadDirectory(string directory, OpenedPathInfo info, out IEnumerable<DirectoryEntry> paths)
+        protected override Errno OnReadDirectory(string directory, OpenedPathInfo info,
+            out IEnumerable<DirectoryEntry> paths)
         {
             try
             {
                 var results = _memoriser.Memorise(_delegate.readdir, directory).Result;
-                paths = results.Select(name =>
-                {
-                    return new DirectoryEntry(name);
-                });
-                return (Errno) FuseStatusCode.Success;
+                paths = results.Select(name => { return new DirectoryEntry(name); });
+                return (Errno)FuseStatusCode.Success;
             }
             catch (Exception e)
             {
@@ -117,12 +117,13 @@ namespace Pfs.Fuse
             }
         }
 
-        protected override Errno OnReadHandle(string file, OpenedPathInfo info, byte[] buf, long offset, out int bytesWritten)
+        protected override Errno OnReadHandle(string file, OpenedPathInfo info, byte[] buf, long offset,
+            out int bytesWritten)
         {
             try
             {
-                bytesWritten = (int) _delegate.read(file, buf, offset).Result;
-                return (Errno) FuseStatusCode.Success;
+                bytesWritten = (int)_delegate.read(file, buf, offset).Result;
+                return (Errno)FuseStatusCode.Success;
             }
             catch (Exception e)
             {
@@ -139,25 +140,17 @@ namespace Pfs.Fuse
                 exception = fuseExceptionFirst;
             }
 
-            if (e is AggregateException aggregateException && aggregateException.GetBaseException() is FuseException fuseExceptionSecond)
+            if (e is AggregateException aggregateException &&
+                aggregateException.GetBaseException() is FuseException fuseExceptionSecond)
             {
                 exception = fuseExceptionSecond;
             }
 
+            Debug.WriteLine(exception.Message);
+            Debug.WriteLine(exception.StackTrace);
             if (exception != null)
             {
-                if (Environment.GetEnvironmentVariable("DEBUG") != null)
-                {
-                    Console.WriteLine(exception.Message);
-                    Console.WriteLine(exception.StackTrace);
-                }
-                return (Errno) exception.ErrorCode;
-            }
-
-            if (Environment.GetEnvironmentVariable("DEBUG") != null)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine(e.StackTrace);
+                return (Errno)exception.ErrorCode;
             }
             return Errno.ENOENT;
         }
@@ -204,21 +197,23 @@ namespace Pfs.Fuse
                 return "Error = " + err;
             }
 
-            var result = "Stat = " + JsonConvert.SerializeObject(buf);
+            var result = "Stat = " +
+                         Encoding.UTF8.GetString(JsonSerializer.SerializeToUtf8Bytes(buf,
+                             new JsonSerializerOptions { WriteIndented = true })) + "\n";
 
-            var isFile = (long) buf.st_mode == FuseAttributes.FILE_MODE;
+            var isFile = (long)buf.st_mode == FuseAttributes.FILE_MODE;
             if (isFile)
             {
-
+                result += "Type = File\n";
             }
             else
             {
                 OnReadDirectory(path, null, out var paths);
                 result += "Type = Folder\n";
-                result += "Files = " + string.Join(", ", paths.Select(p => p.Name)) + "\n";
+                result += "Files = [" + string.Join(", ", paths.Select(p => p.Name)) + "]\n";
             }
+
             return result;
         }
     }
 }
-

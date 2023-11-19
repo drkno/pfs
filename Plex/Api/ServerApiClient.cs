@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Xml.Serialization;
@@ -28,7 +29,7 @@ namespace Pfs.Plex.Api
         {
             var url = await _FindServer(device.Connection.Select(c => c.Uri));
             return url == null ? null : new ServerNode(
-                _random.Next(),
+                _random.Next().ToString(),
                 device.Name,
                 device.CreatedAt.ToDateTime(),
                 device.LastSeenAt.ToDateTime(),
@@ -52,9 +53,9 @@ namespace Pfs.Plex.Api
                 return new List<ServerNode>();
             }
 
-            if ((servers.Device == null || int.Parse(servers.Size) != servers.Device.Count) && Environment.GetEnvironmentVariable("DEBUG") != null)
+            if ((servers.Device == null || int.Parse(servers.Size) != servers.Device.Count))
             {
-                Console.WriteLine($"User should have access to {servers.Size} servers, but none were returned.");
+                Debug.WriteLine($"User should have access to {servers.Size} servers, but none were returned.");
             }
 
             var filtered = (await Task.WhenAll((servers.Device ?? throw new InvalidOperationException())
